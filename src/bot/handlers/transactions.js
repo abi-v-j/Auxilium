@@ -6,6 +6,7 @@ import {
 import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
+import { showSection } from "../utils/section.js";
 
 function transactionLine(transaction, currency) {
   const sign = transaction.type === "income" ? "+" : "-";
@@ -26,24 +27,21 @@ export function registerTransactionHandlers(bot) {
 
     if (!transactions.length) {
       await ctx.answerCallbackQuery();
-      await ctx.reply("No transactions yet.", {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await showSection(ctx, "TRANSACTIONS\n\nNo transactions yet.", mainMenuKeyboard());
       return;
     }
 
     const keyboard = new InlineKeyboard();
     transactions.forEach((transaction) => {
-      keyboard.text(`Delete #${transaction.id}`, `transactions:delete:${transaction.id}`).row();
+      keyboard.text(`DELETE #${transaction.id}`, `transactions:delete:${transaction.id}`).row();
     });
-    keyboard.text("Back", "menu:main");
+    keyboard.text("⬅ BACK", "menu:main");
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(
-      ["Last transactions:", "", ...transactions.map((item) => transactionLine(item, user.currency))].join("\n"),
-      {
-        reply_markup: keyboard,
-      },
+    await showSection(
+      ctx,
+      ["TRANSACTIONS", "", ...transactions.map((item) => transactionLine(item, user.currency))].join("\n\n"),
+      keyboard,
     );
   });
 
@@ -51,11 +49,13 @@ export function registerTransactionHandlers(bot) {
     const transactionId = Number(ctx.match[1]);
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(`Delete transaction #${transactionId}?`, {
-      reply_markup: new InlineKeyboard()
-        .text("Confirm Delete", `transactions:delete:confirm:${transactionId}`)
-        .text("Cancel", "transactions:list"),
-    });
+    await showSection(
+      ctx,
+      `DELETE TRANSACTION\n\nDelete transaction #${transactionId}?`,
+      new InlineKeyboard()
+        .text("CONFIRM DELETE", `transactions:delete:confirm:${transactionId}`)
+        .text("CANCEL", "transactions:list"),
+    );
   });
 
   bot.callbackQuery(/^transactions:delete:confirm:(\d+)$/, async (ctx) => {
@@ -63,8 +63,10 @@ export function registerTransactionHandlers(bot) {
     const deleted = await deleteTransaction(user.id, Number(ctx.match[1]));
 
     await ctx.answerCallbackQuery(deleted ? "Deleted." : "Not found.");
-    await ctx.reply(deleted ? "Transaction deleted." : "Transaction not found.", {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await showSection(
+      ctx,
+      deleted ? "TRANSACTION DELETED" : "TRANSACTION NOT FOUND",
+      mainMenuKeyboard(),
+    );
   });
 }

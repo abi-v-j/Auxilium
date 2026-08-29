@@ -6,6 +6,7 @@ import { listCategories } from "../../services/categoryService.js";
 import { createTransaction } from "../../services/transactionService.js";
 import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
+import { showSection } from "../utils/section.js";
 
 export function parseAmount(text) {
   const normalized = text.replace(/,/g, "").trim();
@@ -65,9 +66,11 @@ export function registerExpenseHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter the expense amount:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
-    });
+    await showSection(
+      ctx,
+      "ADD EXPENSE\n\nEnter the expense amount:",
+      new InlineKeyboard().text("CANCEL", "flow:cancel"),
+    );
   });
 
   bot.callbackQuery(/^expense:category:(\d+)$/, async (ctx) => {

@@ -7,6 +7,7 @@ import { createTransaction } from "../../services/transactionService.js";
 import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
 import { parseAmount } from "./expense.js";
+import { showSection } from "../utils/section.js";
 
 async function showConfirmation(ctx, userId, description = null) {
   const state = getState(userId);
@@ -40,9 +41,11 @@ export function registerIncomeHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter the income amount:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
-    });
+    await showSection(
+      ctx,
+      "ADD INCOME\n\nEnter the income amount:",
+      new InlineKeyboard().text("CANCEL", "flow:cancel"),
+    );
   });
 
   bot.callbackQuery(/^income:category:(\d+)$/, async (ctx) => {

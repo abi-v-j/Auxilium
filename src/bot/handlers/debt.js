@@ -8,24 +8,39 @@ import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
 import { clearState, getState, setState } from "../session/state.js";
+import { showSection } from "../utils/section.js";
 import { parseAmount } from "./expense.js";
 
 function debtMenuKeyboard() {
   return new InlineKeyboard()
-    .text("I Owe", "debts:add:i_owe")
-    .text("Owes Me", "debts:add:owes_me")
+    .text("➕ I OWE", "debts:add:i_owe")
+    .text("➕ OWES ME", "debts:add:owes_me")
     .row()
-    .text("View Active", "debts:list")
+    .text("📋 VIEW ACTIVE", "debts:list")
     .row()
-    .text("Back", "menu:main");
+    .text("⬅ BACK", "menu:main");
+}
+
+function debtConfirmKeyboard() {
+  return new InlineKeyboard()
+    .text("CONFIRM", "debts:confirm")
+    .text("CANCEL", "flow:cancel");
+}
+
+function debtSummary(state, description) {
+  return [
+    "SAVE THIS DEBT?",
+    "",
+    `Person: ${state.personName}`,
+    `Amount: ${formatCurrency(state.amount, state.currency)}`,
+    `Description: ${description || "None"}`,
+  ].join("\n");
 }
 
 export function registerDebtHandlers(bot) {
   bot.callbackQuery("debts:menu", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("Debts:", {
-      reply_markup: debtMenuKeyboard(),
-    });
+    await showSection(ctx, "DEBTS\n\nChoose an option:", debtMenuKeyboard());
   });
 
   bot.callbackQuery(/^debts:add:(i_owe|owes_me)$/, async (ctx) => {
@@ -40,9 +55,11 @@ export function registerDebtHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter the person's name:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
-    });
+    await showSection(
+      ctx,
+      "ADD DEBT\n\nEnter the person's name:",
+      new InlineKeyboard().text("CANCEL", "flow:cancel"),
+    );
   });
 
   bot.callbackQuery("debts:list", async (ctx) => {
@@ -53,21 +70,24 @@ export function registerDebtHandlers(bot) {
       ? debts
           .map((debt) => {
             const label = debt.type === "i_owe" ? "You owe" : "Owes you";
-            return `${label} ${debt.person_name}: ${formatCurrency(debt.remaining_amount, user.currency)}`;
+            const note = debt.description ? `\n   Note: ${debt.description}` : "";
+            return `${label} ${debt.person_name}: ${formatCurrency(debt.remaining_amount, user.currency)}${note}`;
           })
-          .join("\n")
+          .join("\n\n")
       : "No active debts.";
 
     const keyboard = new InlineKeyboard();
     debts.forEach((debt) => {
-      keyboard.text(`Pay #${debt.id}`, `debts:pay:${debt.id}`).row();
+      keyboard.text(`💸 PAY #${debt.id}`, `debts:pay:${debt.id}`).row();
     });
-    keyboard.text("Back", "debts:menu");
+    keyboard.text("⬅ BACK", "debts:menu");
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(text, {
-      reply_markup: debts.length ? keyboard : debtMenuKeyboard(),
-    });
+    await showSection(
+      ctx,
+      `ACTIVE DEBTS\n\n${text}`,
+      debts.length ? keyboard : debtMenuKeyboard(),
+    );
   });
 
   bot.callbackQuery(/^debts:pay:(\d+)$/, async (ctx) => {
@@ -82,9 +102,54 @@ export function registerDebtHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter repayment amount:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
+    await showSection(
+      ctx,
+      "RECORD PAYMENT\n\nEnter repayment amount:",
+      new InlineKeyboard().text("CANCEL", "flow:cancel"),
+    );
+  });
+
+  bot.callbackQuery("debts:description:skip", async (ctx) => {
+    const state = getState(ctx.from.id);
+
+    if (!state || state.flow !== "debt" || state.step !== "description") {
+      await ctx.answerCallbackQuery("Nothing to skip.");
+      return;
+    }
+
+    setState(ctx.from.id, {
+      ...state,
+      step: "confirm",
+      description: null,
     });
+
+    await ctx.answerCallbackQuery();
+    await showSection(ctx, debtSummary(state, null), debtConfirmKeyboard());
+  });
+
+  bot.callbackQuery("debts:confirm", async (ctx) => {
+    const state = getState(ctx.from.id);
+
+    if (!state || state.flow !== "debt" || state.step !== "confirm") {
+      await ctx.answerCallbackQuery("Nothing to confirm.");
+      return;
+    }
+
+    const debt = await createDebt({
+      userId: state.userId,
+      personName: state.personName,
+      type: state.debtType,
+      amount: state.amount,
+      description: state.description,
+    });
+
+    clearState(ctx.from.id);
+    await ctx.answerCallbackQuery("Debt saved.");
+    await showSection(
+      ctx,
+      `DEBT SAVED\n\n${debt.person_name}: ${formatCurrency(debt.remaining_amount, state.currency)}`,
+      mainMenuKeyboard(),
+    );
   });
 }
 
@@ -96,8 +161,8 @@ export async function handleDebtText(ctx, state) {
       personName: ctx.message.text.trim(),
     });
 
-    await ctx.reply("Enter the debt amount:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
+    await ctx.reply("ADD DEBT\n\nEnter the debt amount:", {
+      reply_markup: new InlineKeyboard().text("CANCEL", "flow:cancel"),
     });
     return true;
   }
@@ -110,20 +175,32 @@ export async function handleDebtText(ctx, state) {
       return true;
     }
 
-    const debt = await createDebt({
-      userId: state.userId,
-      personName: state.personName,
-      type: state.debtType,
+    setState(ctx.from.id, {
+      ...state,
+      step: "description",
       amount,
     });
 
-    clearState(ctx.from.id);
-    await ctx.reply(
-      `Debt saved: ${debt.person_name} - ${formatCurrency(debt.remaining_amount, state.currency)}`,
-      {
-        reply_markup: mainMenuKeyboard(),
-      },
-    );
+    await ctx.reply("ADD DEBT\n\nAdd a description, or skip it.", {
+      reply_markup: new InlineKeyboard()
+        .text("SKIP", "debts:description:skip")
+        .text("CANCEL", "flow:cancel"),
+    });
+    return true;
+  }
+
+  if (state.step === "description") {
+    const description = ctx.message.text.trim();
+
+    setState(ctx.from.id, {
+      ...state,
+      step: "confirm",
+      description,
+    });
+
+    await ctx.reply(debtSummary(state, description), {
+      reply_markup: debtConfirmKeyboard(),
+    });
     return true;
   }
 
@@ -155,7 +232,7 @@ export async function handleDebtPaymentText(ctx, state) {
     }
 
     await ctx.reply(
-      `Payment recorded. Remaining: ${formatCurrency(debt.remaining_amount, state.currency)}`,
+      `PAYMENT RECORDED\n\nRemaining: ${formatCurrency(debt.remaining_amount, state.currency)}`,
       {
         reply_markup: mainMenuKeyboard(),
       },

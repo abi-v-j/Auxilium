@@ -2,16 +2,17 @@ import { InlineKeyboard } from "grammy";
 import { getOrRegisterUser } from "../../services/userService.js";
 import { updateUserCurrency, updateUserTimezone } from "../../services/settingsService.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
+import { showSection } from "../utils/section.js";
 
 const currencies = ["INR", "USD", "AED", "EUR", "GBP"];
 const timezones = ["Asia/Kolkata", "UTC", "Asia/Dubai", "America/New_York", "Europe/London"];
 
 function settingsKeyboard() {
   return new InlineKeyboard()
-    .text("Change Currency", "settings:currency")
-    .text("Change Timezone", "settings:timezone")
+    .text("CHANGE CURRENCY", "settings:currency")
+    .text("CHANGE TIMEZONE", "settings:timezone")
     .row()
-    .text("Back", "menu:main");
+    .text("⬅ BACK", "menu:main");
 }
 
 function optionKeyboard(values, prefix) {
@@ -25,22 +26,21 @@ function optionKeyboard(values, prefix) {
     }
   });
 
-  return keyboard.row().text("Back", "settings:menu");
+  return keyboard.row().text("⬅ BACK", "settings:menu");
 }
 
 async function showSettings(ctx) {
   const { user } = await getOrRegisterUser(ctx.from);
 
-  await ctx.reply(
+  await showSection(
+    ctx,
     [
-      "Settings",
+      "SETTINGS",
       "",
       `Currency: ${user.currency}`,
       `Timezone: ${user.timezone}`,
     ].join("\n"),
-    {
-      reply_markup: settingsKeyboard(),
-    },
+    settingsKeyboard(),
   );
 }
 
@@ -52,16 +52,20 @@ export function registerSettingsHandlers(bot) {
 
   bot.callbackQuery("settings:currency", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("Choose currency:", {
-      reply_markup: optionKeyboard(currencies, "settings:currency:set"),
-    });
+    await showSection(
+      ctx,
+      "SETTINGS\n\nChoose currency:",
+      optionKeyboard(currencies, "settings:currency:set"),
+    );
   });
 
   bot.callbackQuery("settings:timezone", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("Choose timezone:", {
-      reply_markup: optionKeyboard(timezones, "settings:timezone:set"),
-    });
+    await showSection(
+      ctx,
+      "SETTINGS\n\nChoose timezone:",
+      optionKeyboard(timezones, "settings:timezone:set"),
+    );
   });
 
   bot.callbackQuery(/^settings:currency:set:(.+)$/, async (ctx) => {
@@ -75,9 +79,7 @@ export function registerSettingsHandlers(bot) {
 
     await updateUserCurrency(user.id, currency);
     await ctx.answerCallbackQuery("Currency updated.");
-    await ctx.reply(`Currency updated to ${currency}.`, {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await showSection(ctx, `SETTINGS UPDATED\n\nCurrency: ${currency}`, mainMenuKeyboard());
   });
 
   bot.callbackQuery(/^settings:timezone:set:(.+)$/, async (ctx) => {
@@ -91,15 +93,11 @@ export function registerSettingsHandlers(bot) {
 
     await updateUserTimezone(user.id, timezone);
     await ctx.answerCallbackQuery("Timezone updated.");
-    await ctx.reply(`Timezone updated to ${timezone}.`, {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await showSection(ctx, `SETTINGS UPDATED\n\nTimezone: ${timezone}`, mainMenuKeyboard());
   });
 
   bot.callbackQuery("menu:main", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("Main menu:", {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await showSection(ctx, "AUXILIUM\n\nChoose an option:", mainMenuKeyboard());
   });
 }

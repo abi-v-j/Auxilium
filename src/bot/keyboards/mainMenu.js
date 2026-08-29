@@ -2,14 +2,14 @@ import { InlineKeyboard } from "grammy";
 
 export function mainMenuKeyboard() {
   return new InlineKeyboard()
-    .text("💸 Add Expense", "expense:add")
-    .text("💰 Add Income", "income:add")
+    .text("💸 ADD EXPENSE", "expense:add")
+    .text("💰 ADD INCOME", "income:add")
     .row()
-    .text("📊 Dashboard", "dashboard:view")
-    .text("📋 Transactions", "transactions:list")
+    .text("📊 DASHBOARD", "dashboard:view")
+    .text("📋 HISTORY", "transactions:list")
     .row()
-    .text("🤝 Debts", "debts:menu")
-    .text("💳 Budget", "budget:menu")
+    .text("🤝 DEBTS", "debts:menu")
+    .text("💳 BUDGET", "budget:menu")
     .row()
-    .text("⚙️ Settings", "settings:menu");
+    .text("⚙️ SETTINGS", "settings:menu");
 }

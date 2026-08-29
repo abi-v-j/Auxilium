@@ -40,6 +40,7 @@ create table if not exists debts (
   type text not null check (type in ('i_owe', 'owes_me')),
   original_amount numeric(12, 2) not null check (original_amount > 0),
   remaining_amount numeric(12, 2) not null check (remaining_amount >= 0),
+  description text,
   status text not null default 'active' check (status in ('active', 'paid', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -67,4 +68,6 @@ create table if not exists budgets (
 create index if not exists idx_transactions_user_date on transactions(user_id, transaction_date desc);
 create index if not exists idx_categories_user_type on categories(user_id, type);
 create index if not exists idx_debts_user_status on debts(user_id, status);
+
+alter table debts add column if not exists description text;
 `;

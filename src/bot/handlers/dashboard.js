@@ -2,6 +2,7 @@ import { getMonthlyDashboard } from "../../services/reportService.js";
 import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
+import { showSection } from "../utils/section.js";
 
 export function registerDashboardHandlers(bot) {
   bot.callbackQuery("dashboard:view", async (ctx) => {
@@ -25,9 +26,10 @@ export function registerDashboardHandlers(bot) {
       : "No expenses yet.";
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(
+    await showSection(
+      ctx,
       [
-        `Dashboard - ${month}`,
+        `DASHBOARD - ${month.toUpperCase()}`,
         "",
         `Income: ${formatCurrency(report.income, user.currency)}`,
         `Expenses: ${formatCurrency(report.expenses, user.currency)}`,
@@ -36,9 +38,7 @@ export function registerDashboardHandlers(bot) {
         "Top Expenses:",
         topExpenses,
       ].join("\n"),
-      {
-        reply_markup: mainMenuKeyboard(),
-      },
+      mainMenuKeyboard(),
     );
   });
 }

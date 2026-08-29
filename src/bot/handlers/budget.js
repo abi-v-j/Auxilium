@@ -6,22 +6,21 @@ import { formatCurrency } from "../../utils/currency.js";
 import { categoryKeyboard } from "../keyboards/categoryKeyboard.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
 import { clearState, getState, setState } from "../session/state.js";
+import { showSection } from "../utils/section.js";
 import { parseAmount } from "./expense.js";
 
 function budgetMenuKeyboard() {
   return new InlineKeyboard()
-    .text("Set Budget", "budget:set")
-    .text("View Budgets", "budget:view")
+    .text("SET BUDGET", "budget:set")
+    .text("VIEW BUDGETS", "budget:view")
     .row()
-    .text("Back", "menu:main");
+    .text("⬅ BACK", "menu:main");
 }
 
 export function registerBudgetHandlers(bot) {
   bot.callbackQuery("budget:menu", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("Budget:", {
-      reply_markup: budgetMenuKeyboard(),
-    });
+    await showSection(ctx, "BUDGET\n\nChoose an option:", budgetMenuKeyboard());
   });
 
   bot.callbackQuery("budget:view", async (ctx) => {
@@ -40,9 +39,7 @@ export function registerBudgetHandlers(bot) {
       : "No budgets set for this month.";
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(text, {
-      reply_markup: budgetMenuKeyboard(),
-    });
+    await showSection(ctx, `CURRENT BUDGETS\n\n${text}`, budgetMenuKeyboard());
   });
 
   bot.callbackQuery("budget:set", async (ctx) => {
@@ -57,9 +54,11 @@ export function registerBudgetHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Choose a category for the monthly budget:", {
-      reply_markup: categoryKeyboard(categories, "budget:category"),
-    });
+    await showSection(
+      ctx,
+      "SET BUDGET\n\nChoose a category:",
+      categoryKeyboard(categories, "budget:category"),
+    );
   });
 
   bot.callbackQuery(/^budget:category:(\d+)$/, async (ctx) => {
@@ -77,9 +76,11 @@ export function registerBudgetHandlers(bot) {
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter the monthly budget limit:", {
-      reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
-    });
+    await showSection(
+      ctx,
+      "SET BUDGET\n\nEnter the monthly budget limit:",
+      new InlineKeyboard().text("CANCEL", "flow:cancel"),
+    );
   });
 }
 

@@ -1,13 +1,20 @@
 import { pool, query } from "../database/db.js";
 
-export async function createDebt({ userId, personName, type, amount }) {
+export async function createDebt({ userId, personName, type, amount, description }) {
   const result = await query(
     `
-      insert into debts (user_id, person_name, type, original_amount, remaining_amount)
-      values ($1, $2, $3, $4, $4)
+      insert into debts (
+        user_id,
+        person_name,
+        type,
+        original_amount,
+        remaining_amount,
+        description
+      )
+      values ($1, $2, $3, $4, $4, $5)
       returning *
     `,
-    [userId, personName, type, amount],
+    [userId, personName, type, amount, description || null],
   );
 
   return result.rows[0];

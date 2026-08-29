@@ -1,5 +1,6 @@
 import { clearState, getState } from "../session/state.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
+import { showSection } from "../utils/section.js";
 import { handleBudgetText } from "./budget.js";
 import { handleDebtPaymentText, handleDebtText } from "./debt.js";
 import { handleExpenseText } from "./expense.js";
@@ -9,9 +10,7 @@ export function registerTextHandlers(bot) {
   bot.callbackQuery("flow:cancel", async (ctx) => {
     clearState(ctx.from.id);
     await ctx.answerCallbackQuery("Cancelled.");
-    await ctx.reply("Cancelled. Choose another option:", {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await showSection(ctx, "CANCELLED\n\nChoose another option:", mainMenuKeyboard());
   });
 
   bot.on("message:text", async (ctx) => {
