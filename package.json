@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "db:test": "node src/database/testConnection.js",
-    "db:init": "node src/database/init.js"
+    "db:init": "node src/database/init.js",
+    "db:secure": "node src/database/secureRls.js"
   },
   "keywords": [],
   "author": "",

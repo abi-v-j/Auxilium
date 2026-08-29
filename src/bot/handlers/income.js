@@ -6,32 +6,7 @@ import { listCategories } from "../../services/categoryService.js";
 import { createTransaction } from "../../services/transactionService.js";
 import { getOrRegisterUser } from "../../services/userService.js";
 import { formatCurrency } from "../../utils/currency.js";
-
-export function parseAmount(text) {
-  const normalized = text.replace(/,/g, "").trim();
-  const amount = Number(normalized);
-
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return amount;
-}
-
-async function askForDescription(ctx, userId, categoryId) {
-  const state = getState(userId);
-  setState(userId, {
-    ...state,
-    step: "description",
-    categoryId,
-  });
-
-  await ctx.reply("Add a description, or skip it.", {
-    reply_markup: new InlineKeyboard()
-      .text("Skip", "expense:description:skip")
-      .text("Cancel", "flow:cancel"),
-  });
-}
+import { parseAmount } from "./expense.js";
 
 async function showConfirmation(ctx, userId, description = null) {
   const state = getState(userId);
@@ -44,48 +19,58 @@ async function showConfirmation(ctx, userId, description = null) {
 
   await ctx.reply(
     [
-      "Save this expense?",
+      "Save this income?",
       `Amount: ${formatCurrency(state.amount, state.currency)}`,
       `Description: ${description || "None"}`,
     ].join("\n"),
     {
-      reply_markup: confirmationKeyboard("expense:confirm"),
+      reply_markup: confirmationKeyboard("income:confirm"),
     },
   );
 }
 
-export function registerExpenseHandlers(bot) {
-  bot.callbackQuery("expense:add", async (ctx) => {
+export function registerIncomeHandlers(bot) {
+  bot.callbackQuery("income:add", async (ctx) => {
     const { user } = await getOrRegisterUser(ctx.from);
     setState(ctx.from.id, {
-      flow: "expense",
+      flow: "income",
       step: "amount",
       userId: user.id,
       currency: user.currency,
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.reply("Enter the expense amount:", {
+    await ctx.reply("Enter the income amount:", {
       reply_markup: new InlineKeyboard().text("Cancel", "flow:cancel"),
     });
   });
 
-  bot.callbackQuery(/^expense:category:(\d+)$/, async (ctx) => {
+  bot.callbackQuery(/^income:category:(\d+)$/, async (ctx) => {
     const state = getState(ctx.from.id);
 
-    if (!state || state.flow !== "expense" || state.step !== "category") {
-      await ctx.answerCallbackQuery("Start an expense first.");
+    if (!state || state.flow !== "income" || state.step !== "category") {
+      await ctx.answerCallbackQuery("Start an income first.");
       return;
     }
 
+    setState(ctx.from.id, {
+      ...state,
+      step: "description",
+      categoryId: Number(ctx.match[1]),
+    });
+
     await ctx.answerCallbackQuery();
-    await askForDescription(ctx, ctx.from.id, Number(ctx.match[1]));
+    await ctx.reply("Add a description, or skip it.", {
+      reply_markup: new InlineKeyboard()
+        .text("Skip", "income:description:skip")
+        .text("Cancel", "flow:cancel"),
+    });
   });
 
-  bot.callbackQuery("expense:description:skip", async (ctx) => {
+  bot.callbackQuery("income:description:skip", async (ctx) => {
     const state = getState(ctx.from.id);
 
-    if (!state || state.flow !== "expense" || state.step !== "description") {
+    if (!state || state.flow !== "income" || state.step !== "description") {
       await ctx.answerCallbackQuery("Nothing to skip.");
       return;
     }
@@ -94,10 +79,10 @@ export function registerExpenseHandlers(bot) {
     await showConfirmation(ctx, ctx.from.id);
   });
 
-  bot.callbackQuery("expense:confirm", async (ctx) => {
+  bot.callbackQuery("income:confirm", async (ctx) => {
     const state = getState(ctx.from.id);
 
-    if (!state || state.flow !== "expense" || state.step !== "confirm") {
+    if (!state || state.flow !== "income" || state.step !== "confirm") {
       await ctx.answerCallbackQuery("Nothing to confirm.");
       return;
     }
@@ -105,18 +90,18 @@ export function registerExpenseHandlers(bot) {
     const transaction = await createTransaction({
       userId: state.userId,
       categoryId: state.categoryId,
-      type: "expense",
+      type: "income",
       amount: state.amount,
       description: state.description,
     });
 
     clearState(ctx.from.id);
-    await ctx.answerCallbackQuery("Expense saved.");
-    await ctx.reply(`Saved expense: ${formatCurrency(transaction.amount, state.currency)}`);
+    await ctx.answerCallbackQuery("Income saved.");
+    await ctx.reply(`Saved income: ${formatCurrency(transaction.amount, state.currency)}`);
   });
 }
 
-export async function handleExpenseText(ctx, state) {
+export async function handleIncomeText(ctx, state) {
   if (state.step === "amount") {
     const amount = parseAmount(ctx.message.text);
 
@@ -131,9 +116,9 @@ export async function handleExpenseText(ctx, state) {
       amount,
     });
 
-    const categories = await listCategories(state.userId, "expense");
+    const categories = await listCategories(state.userId, "income");
     await ctx.reply("Choose a category:", {
-      reply_markup: categoryKeyboard(categories, "expense:category"),
+      reply_markup: categoryKeyboard(categories, "income:category"),
     });
     return true;
   }

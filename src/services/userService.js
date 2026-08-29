@@ -42,6 +42,7 @@ export async function getOrRegisterUser(from) {
   const user = await findUserByTelegramId(from.id);
 
   if (user) {
+    await ensureDefaultCategories(user.id);
     return { user, isNew: false };
   }
 
