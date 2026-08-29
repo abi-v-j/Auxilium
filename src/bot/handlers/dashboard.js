@@ -28,13 +28,8 @@ export function registerDashboardHandlers(bot) {
     await ctx.answerCallbackQuery();
     await showSection(
       ctx,
-      "DASHBOARD\n\nChoose an option:",
-      mainMenuKeyboard(),
-    );
-
-    await ctx.reply(
       [
-        "DASHBOARD DATA",
+        "DASHBOARD",
         "",
         `${month.toUpperCase()}`,
         "",
@@ -45,6 +40,7 @@ export function registerDashboardHandlers(bot) {
         "Top Expenses:",
         topExpenses,
       ].join("\n"),
+      mainMenuKeyboard(),
     );
   });
 }

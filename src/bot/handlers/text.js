@@ -39,6 +39,8 @@ export function registerTextHandlers(bot) {
       return;
     }
 
-    await ctx.reply("Use /start to open the Auxilium menu.");
+    await ctx.reply("AUXILIUM\n\nChoose an option:", {
+      reply_markup: mainMenuKeyboard(),
+    });
   });
 }
