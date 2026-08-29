@@ -14,6 +14,7 @@ import { parseAmount } from "./expense.js";
 function debtMenuKeyboard() {
   return new InlineKeyboard()
     .text("➕ I OWE", "debts:add:i_owe")
+    .row()
     .text("➕ OWES ME", "debts:add:owes_me")
     .row()
     .text("📋 VIEW ACTIVE", "debts:list")
