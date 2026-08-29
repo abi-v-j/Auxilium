@@ -11,5 +11,5 @@ export function categoryKeyboard(categories, prefix) {
     }
   });
 
-  return keyboard.row().text("Cancel", "flow:cancel");
+  return keyboard.row().text("CANCEL", "flow:cancel");
 }

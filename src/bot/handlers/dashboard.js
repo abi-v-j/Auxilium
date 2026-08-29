@@ -29,7 +29,8 @@ export function registerDashboardHandlers(bot) {
     await showSection(
       ctx,
       [
-        `DASHBOARD - ${month.toUpperCase()}`,
+        `📊 DASHBOARD`,
+        `${month.toUpperCase()}`,
         "",
         `Income: ${formatCurrency(report.income, user.currency)}`,
         `Expenses: ${formatCurrency(report.expenses, user.currency)}`,

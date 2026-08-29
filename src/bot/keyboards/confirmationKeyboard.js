@@ -2,6 +2,6 @@ import { InlineKeyboard } from "grammy";
 
 export function confirmationKeyboard(confirmCallback) {
   return new InlineKeyboard()
-    .text("Confirm", confirmCallback)
-    .text("Cancel", "flow:cancel");
+    .text("CONFIRM", confirmCallback)
+    .text("CANCEL", "flow:cancel");
 }

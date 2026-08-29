@@ -8,7 +8,7 @@ import { formatCurrency } from "../../utils/currency.js";
 import { mainMenuKeyboard } from "../keyboards/mainMenu.js";
 import { showSection } from "../utils/section.js";
 
-function transactionLine(transaction, currency) {
+function transactionLine(transaction, currency, index) {
   const sign = transaction.type === "income" ? "+" : "-";
   const icon = transaction.category_icon || "";
   const description = transaction.description ? ` - ${transaction.description}` : "";
@@ -17,7 +17,7 @@ function transactionLine(transaction, currency) {
     month: "short",
   });
 
-  return `${date} ${icon} ${transaction.category_name || "Uncategorized"} ${sign}${formatCurrency(transaction.amount, currency)}${description}`;
+  return `${index + 1}. ${date} ${icon} ${transaction.category_name || "Uncategorized"} ${sign}${formatCurrency(transaction.amount, currency)}${description}`;
 }
 
 export function registerTransactionHandlers(bot) {
@@ -32,15 +32,21 @@ export function registerTransactionHandlers(bot) {
     }
 
     const keyboard = new InlineKeyboard();
-    transactions.forEach((transaction) => {
-      keyboard.text(`DELETE #${transaction.id}`, `transactions:delete:${transaction.id}`).row();
+    transactions.forEach((transaction, index) => {
+      keyboard.text(`DELETE ${index + 1}`, `transactions:delete:${transaction.id}`).row();
     });
     keyboard.text("⬅ BACK", "menu:main");
 
     await ctx.answerCallbackQuery();
     await showSection(
       ctx,
-      ["TRANSACTIONS", "", ...transactions.map((item) => transactionLine(item, user.currency))].join("\n\n"),
+      [
+        "TRANSACTIONS",
+        "",
+        ...transactions.map((item, index) =>
+          transactionLine(item, user.currency, index),
+        ),
+      ].join("\n\n"),
       keyboard,
     );
   });
@@ -51,7 +57,7 @@ export function registerTransactionHandlers(bot) {
     await ctx.answerCallbackQuery();
     await showSection(
       ctx,
-      `DELETE TRANSACTION\n\nDelete transaction #${transactionId}?`,
+      "DELETE TRANSACTION\n\nAre you sure?",
       new InlineKeyboard()
         .text("CONFIRM DELETE", `transactions:delete:confirm:${transactionId}`)
         .text("CANCEL", "transactions:list"),

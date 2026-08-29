@@ -9,7 +9,7 @@ export function registerStartCommand(bot) {
       ? "Welcome to Auxilium Finance Tracker. Your account is ready."
       : "Welcome back to Auxilium Finance Tracker.";
 
-    await ctx.reply(`${intro}\n\nChoose an option:`, {
+    await ctx.reply(`${intro}\n\nAUXILIUM\n\nChoose an option:`, {
       reply_markup: mainMenuKeyboard(),
     });
   });
